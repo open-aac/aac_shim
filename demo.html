@@ -1,0 +1,247 @@
+<html>
+  <head>
+    <style>
+      .target {
+        border: 1px solid #00f;
+      }
+      .target:hover, .target.highlighted {
+        background: rgba(0, 0, 255, 0.3);
+      }
+      .event_type.selected {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="float: left; width: 50%;">
+      <h1>AAC Shim Demo</h1>
+      <input type="text" id="url" value="./demo_frame.html" style="width: 350px; height: 30px;"/>
+      <button id="load_url" style="height: 30px;">load</button>
+      <div style="margin-top: 10px; margin-bottom: 10px;">
+        <a href="#" rel="0" class='event_type selected'>Mouse Events</a> | 
+        <a href="#" rel="1" class='event_type'>Touch Events</a> | 
+        <a href="#" rel="2" class='event_type'>Gaze Events</a> | 
+        <a href="#" rel="3" class='event_type'>Scan Events</a>
+      </div>
+      <label>
+        <input type="checkbox" id="scanning">
+        Enable Scanning
+      </label>
+    </div>
+    <div style="float: left; width: 50%;">
+      <p style='margin-top: 50px; padding: 0 10px;'>
+        This is a simple demo showing how inter-window communication happens to support AAC Shim. 
+        There is a div overlay on top of the frame so no native events are being passed in. This is
+        done for testing and demo purposes, although some AAC systems may choose to do the same
+        thing in production. Feel free to paste in your own site for testing with AAC Shim. You
+        can fiddle with the settings to see different types of events and how scanning might appear.
+      </p>
+    </div>
+    <div style="clear: left;"></div>
+    <div style="position: relative;">
+      <iframe id="frame" src="./demo_frame.html" frameborder=0 style="display: block; width: 80%; height: 400px; border: 2px solid #ccc; margin: 50px auto;"></iframe>
+      <div id="overlay" style="position: absolute; top: 0; left: 10%; width: 80%; height: 400px;"></div>
+    </div>
+    <h4>Last Message Passed</h4>
+    <div id='last_message' style='white-space: pre;'></div>
+    
+    <script>
+      var triggers = [];
+      var reset = function() {
+        triggers = [];
+        targets = {};
+        target_ids = [];
+        source = null;
+        last_target_event = {};
+        event_type_index = 0;
+        scanning = null;
+        duration = 0;
+      };
+      var trigger = function(opts) { 
+        for(var idx = 0; idx < triggers.length; idx++) {
+          if(triggers[idx] && triggers[idx].call) {
+            triggers[idx].call(this, opts);
+          }
+        }
+        if(opts.event.target.classList.contains('target') && opts.event.target.callback_id && opts.type == 'select') {
+          source.postMessage({
+            aac_shim: true,
+            callback_id: opts.event.target.callback_id,
+            type: opts.type,
+            id: opts.event.target.target_id
+          }, '*');
+        }
+      };
+      var targets = {};
+      var target_ids = [];
+      var source = null;
+      var overlay = document.getElementById('overlay');
+      var last_target_event = {};
+      var event_type_index = 0;
+      // Note that this demo is assuming there will only ever be one session at a time
+      // and is ignoring the session_id parameter. Depending on the AAC system and its
+      // implementation this may or may not be a valid assumption.
+      window.addEventListener('message', function(event) {
+        if(event && event.data && event.data.aac_shim) {
+          console.log("message passed:");
+          console.log(event.data);
+          document.getElementById('last_message').innerHTML = JSON.stringify(event.data, null, 4);
+          if(event.data.action == 'status') {
+            source = event.source;
+            event.source.postMessage({aac_shim: true, status: 'ready', callback_id: event.data.callback_id}, '*');
+          } else if(event.data.action == 'listen') {
+            triggers.push(function(opts) {
+              var types = ['click', 'touch', 'gazedwell', 'scanselect'];
+              if(opts.type == 'hover') {
+                types = ['mousemove', null, 'gazelinger', null];
+              }
+              var type = opts.force_type || types[event_type_index];
+              var rect = overlay.getBoundingClientRect();
+              if(type && opts.event.clientX >= rect.left && opts.event.clientX <= rect.right && opts.event.clientY >= rect.top && opts.event.clientY <= rect.bottom) {              
+                if(opts.event.preventDefault) { opts.event.preventDefault(); }
+                event.source.postMessage({
+                  aac_shim: true,
+                  callback_id: event.data.callback_id,
+                  type: type,
+                  x_percent: (opts.event.clientX - rect.left) / rect.width,
+                  y_percent: (opts.event.clientY - rect.top) / rect.height
+                }, '*');
+              }
+            });
+          } else if(event.data.action == 'add_target') {
+            var rect = overlay.getBoundingClientRect();
+            var target = document.createElement('div');
+            target.classList.add('target');
+            target.id = 'target_' + event.data.target.id;
+            target.style = 'position: absolute; width: ' + (event.data.target.width_percent * rect.width) + '; height: ' + (event.data.target.height_percent * rect.height) + '; left: ' + (rect.left + (event.data.target.left_percent * rect.width)) + '; top: ' + ((document.body.scrollTop || document.scrollTop || 0) + rect.top + (event.data.target.top_percent * rect.height)) + ';'
+            target.callback_id = event.data.callback_id;
+            target.target_id = event.data.target.id;
+            target.prompt = event.data.target.prompt;
+            target.addEventListener('click', function(event) {
+              trigger({ event: event, type: 'select' });
+            });
+            target.addEventListener('mousemove', function(event) {
+              trigger({ event: event, type: 'hover' });
+            });
+            document.body.appendChild(target);
+            targets[event.data.target.id] = target;
+            target_ids.push(event.data.target.id);
+            event.source.postMessage({aac_shim: true, callback_id: event.data.callback_id, id: event.data.target.id}, '*');
+          } else if(event.data.action == 'clear_target') {
+            if(targets[event.data.id]) {
+              targets[event.data.id].parentNode.removeChild(targets[event.data.id]);
+              var new_list = [];
+              for(var idx = 0; idx < target_ids.length; idx++) {
+                if(target_ids[idx] != event.data.id) { new_list.push(target_ids[idx]); }
+              }
+              target_ids = new_list;
+              delete targets[event.data.id];
+            }
+          } else if(event.data.action == 'clear_targets') {
+            for(var idx in targets) {
+              var target = targets[idx];
+              if(target) {
+                target.parentNode.removeChild(target);
+              }
+            }
+            targets = {};
+            target_ids = [];
+          }
+        }
+      });
+      var scanning = null;
+      var duration = 0;
+      var next_target = function() {
+        if(!scanning || duration >= 20) {
+          var elems = document.getElementsByClassName('target');
+          for(var idx = 0; idx < elems.length; idx++) {
+            elems[idx].classList.remove('highlighted');
+          }
+        }
+        if(scanning && duration >= 20) {
+          if(scanning.index === undefined) { 
+            scanning.index = 0; 
+          } else {
+            scanning.index++;
+          }
+          if(scanning.index >= target_ids.length) {
+            scanning.index = 0;
+          }
+          var target = targets[target_ids[scanning.index]];
+          if(target) {
+            target.classList.add('highlighted');
+            var rect = target.getBoundingClientRect();
+            trigger({ event: {
+              target: target, 
+              clientX: rect.left + (rect.width / 2),
+              clientY: rect.top + (rect.height / 2)
+            }, type: 'hover', force_type: 'scanover' });
+            if(window.speechSynthesis) {
+              var u = new window.SpeechSynthesisUtterance(target.prompt || "no prompt defined");
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(u);
+            }
+          }
+          duration = 0;
+        } else if(scanning) {
+          duration++;
+        } else {
+          duration = 0;
+        }
+      };
+      setInterval(next_target, 100);
+      document.getElementById('scanning').addEventListener('change', function(event) {
+        scanning = event.target.checked ? {} : null;
+      });
+      document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 13 && scanning) {
+          event.preventDefault();
+          var target = targets[target_ids[scanning.index]];
+          if(target) {
+            var rect = target.getBoundingClientRect();
+            trigger({ event: {
+              target: target,
+              clientX: rect.left + (rect.width / 2),
+              clientY: rect.top + (rect.height / 2)
+            }, type: 'select', force_type: 'scanselect'});
+          }
+          // select!
+        } else if(event.keyCode == 32) {
+          event.preventDefault();
+          duration = 20;
+          next_target();
+        }
+      });
+      document.addEventListener('click', function(event) {
+        if(event.target.classList.contains('event_type')) {
+          event.preventDefault();
+          var list = document.getElementsByClassName('event_type');
+          for(var idx = 0; idx < list.length; idx++) {
+            list[idx].classList.remove('selected');
+          }
+          event.target.classList.add('selected');
+          event_type_index = parseInt(event.target.rel) || 0;
+        }
+      });
+      document.getElementById('load_url').addEventListener('click', function(event) {
+        reset();
+        if(!document.getElementById('url').value) {
+          document.getElementById('url').value = "./demo_frame.html";
+        }
+        localStorage.last_tested_url = document.getElementById('url').value;
+        document.getElementById('frame').src = document.getElementById('url').value;
+      });
+      overlay.addEventListener('click', function(event) {
+        trigger({ event: event, type: 'select' });
+      });
+      overlay.addEventListener('mousemove', function(event) {
+        trigger({ event: event, type: 'hover' });
+      });
+      if(localStorage.last_tested_url) {
+        reset();
+        document.getElementById('url').value = localStorage.last_tested_url;
+        document.getElementById('frame').src = document.getElementById('url').value;
+      }
+    </script>
+  </body>
+</html>

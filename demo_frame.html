@@ -1,0 +1,134 @@
+<html>
+  <head>
+    <style>
+      .target {
+        border: 1px solid #800;
+        background: 1px solid #a00;
+      }
+      table {
+        border-collapse: collapse;
+      }
+      table td {
+        border: 1px solid #eee;
+        padding: 5px;
+      }
+      button {
+        height: 40px;
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>AAC Shim Example</h2>
+    <p>This is an example of a minimal app using AAC shim to communicate with its container.</p>
+    <table>
+      <tbody>
+        <tr>
+          <td>Status</td>
+          <td id="status" colspan="4"></td>
+        </tr>
+        <tr>
+          <td style='width: 10%;'>Last Event</td>
+          <td id="last_event1" style='width: 10%;'></td>
+          <td id="last_event2" style='width: 10%;'></td>
+          <td id="last_event3" style='width: 10%;'></td>
+          <td id="last_event4" style='width: 30%;'></td>
+        </tr>
+        <tr>
+          <td>Last Target</td>
+          <td id="last_target1"></td>
+          <td id="last_target2"></td>
+          <td id="last_target3"></td>
+          <td id="last_target4"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div id="actions" style="display: none;">
+      <button id="add_target">Add Target</button>
+      <button id="clear_last_target">Clear Last Target</button>
+      <button id="clear_targets">Clear All Targets</button>
+    </div>
+    <div id="cursor" style="position: absolute; left: -1000px; width: 5px; height: 5px; background: #f00; border-radius: 5px;"></div>
+    <script src="./aac_shim.js"></script>
+    <script>
+      document.getElementById('status').innerHTML = 'initializing';
+      aac_shim.status(function(res) {
+        if(res.error) {
+          document.getElementById('status').innerHTML = res.error;
+        } else if(res.status) {
+          document.getElementById('status').innerHTML = res.status;
+          if(res.status == 'ready') {
+            aac_shim.map_to_mouse_events(document.getElementById('cursor'));
+            aac_shim.listen(function(event) { 
+              document.getElementById('last_event1').innerHTML = event.type;
+              document.getElementById('last_event2').innerHTML = (Math.round(event.x_percent * 1000) / 10) + "%";
+              document.getElementById('last_event3').innerHTML = (Math.round(event.y_percent * 1000) / 10) + "%";
+              document.getElementById('last_event4').innerHTML = (new Date()).toString();
+            });
+            document.getElementById('actions').style.display = 'block';
+          }
+        }
+      });
+      
+      var target_ids = [];
+      document.addEventListener('click', function(event) {
+        // adding another target
+        if(event.target.id == 'add_target') {
+          if(target_ids.length >= 4) {
+            alert('clear targets first');
+            return;
+          }
+          var div = document.createElement('div');
+          div.id = 'target_' + target_ids.length;
+          div.classList.add('target');
+          var left = (10 + (target_ids.length * 20)) + "%";
+          div.style = 'display: block; position: absolute; top: calc(250px + 10px); height: calc(100px - 20px); left: calc(' + left + ' + 10px); width: calc(20% - 20px);'
+          div.innerHTML = "target " + (target_ids.length + 1);
+          document.body.appendChild(div);
+          
+          var id = aac_shim.add_target({
+            left: left,
+            width: "20%",
+            top: 250,
+            height: 100,
+            prompt: "target " + (target_ids.length + 1)
+          }, function(event) {
+            if(event.type) {
+              document.getElementById('last_target1').innerHTML = div.innerHTML;
+              document.getElementById('last_target4').innerHTML = (new Date()).toString();
+            }
+          });
+          target_ids.push(id);
+          
+        // clearing the last target
+        } else if(event.target.id == 'clear_last_target') {
+          if(target_ids.length == 0) { return; }
+          var target = document.getElementById('target_' + (target_ids.length - 1));
+          target.parentNode.removeChild(target);
+          var target_id = target_ids.pop();
+          aac_shim.clear_target(target_id);
+          
+        // clearing all targets
+        } else if(event.target.id == 'clear_targets') {
+          for(var idx = 0; idx < 4; idx++) {
+            var target = document.getElementById('target_' + idx);
+            if(target) {
+              target.parentNode.removeChild(target);
+            }
+          }
+          aac_shim.clear_targets();
+          target_ids = [];
+        }
+      });
+      
+      // update the cursor based on passed-in mouse events
+      document.addEventListener('mousemove', function(event) {
+        if(event.detail && event.detail.from_aac) {
+          var cursor = document.getElementById('cursor');
+          cursor.style.left = event.detail.x;
+          cursor.style.top = event.detail.y;
+        }
+      });
+    </script>
+  </body>
+</html>

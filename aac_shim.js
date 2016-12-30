@@ -16,16 +16,22 @@ var aac_shim;
       post_message.callbacks = post_message.callbacks || {};
       post_message.callbacks[callback_id] = callback;
       callback.persistent = !!obj.persistent_callback;
+      delete obj.persistent_callback;
+      setTimeout(function() {
+        if(post_message.callbacks[callback_id] && !post_message.callbacks[callback_id].responded && !post_message.callbacks[callback_id].persistent) {
+          callback({error: 'no response within expected time window'});
+        }
+      }, 5 * 1000);
       callback.timeout_id = setTimeout(function() {
         if(post_message.callbacks[callback_id] && !post_message.callbacks[callback_id].persistent) {
           clear_callbacks([callback_id]);
         }
       }, 5 * 60 * 1000);
     }
-    aac.postMessage(obj);
+    aac.postMessage(obj, '*');
     return callback_id;
   };
-  var clear_callbacks(ids) {
+  var clear_callbacks = function(ids) {
     for(var idx = 0; idx < ids.length; idx++) {
       var id = ids[idx];
       if(id && post_message.callbacks[id]) {
@@ -34,10 +40,11 @@ var aac_shim;
       }
     }
   };
-  window.on('message', function(event) {
+  window.addEventListener('message', function(event) {
     if(event.data && event.data.aac_shim) {
       var callback = post_message.callbacks[event.data.callback_id];
       if(callback) {
+        callback.responded = true;
         if(!callback.persistent) {
           clear_callbacks([event.data.callback_id]);
         }
@@ -48,17 +55,22 @@ var aac_shim;
     }
   });
   aac_shim = {
-    map_to_mouse_events: function() {
+    map_to_mouse_events: function(cursor) {
+      aac_shim.cursor = cursor;
       aac_shim.listen(function(event) {
-        var x = Math.round(event.x_percent / 100.0 * window.innerWidth);
-        var y = Math.round(event.y_percent / 100.0 * window.innerHeight);
+        var x = Math.round(event.x_percent * window.innerWidth);
+        var y = Math.round(event.y_percent * window.innerHeight);
+        var cursor_left = aac_shim.cursor && aac_shim.cursor.style.left;
+        if(aac_shim.cursor) { aac_shim.cursor.style.left = '-1000px'; }
         var elem = document.elementFromPoint(x, y);
-        if(event.type == 'gazedwell' || event.type == 'click' || event.type == 'touch') {
+        if(aac_shim.cursor) { aac_shim.cursor.style.left = cursor_left; }
+        if(event.type == 'gazedwell' || event.type == 'click' || event.type == 'touch' || event.type == 'scanselect') {
           elem.dispatchEvent(new CustomEvent(
-            'click'
+            'click',
             {
               detail: {
                 from_aac: true,
+                select_type: event.type,
                 x: x,
                 y: y
               },
@@ -66,12 +78,13 @@ var aac_shim;
               cancelable: true
             }
           ));
-        } else if(event.type == 'gazelinger' || event.type == 'mousemove') {
+        } else if(event.type == 'gazelinger' || event.type == 'mousemove' || event.type == 'scanover') {
           elem.dispatchEvent(new CustomEvent(
-            'mousemove'
+            'mousemove',
             {
               detail: {
                 from_aac: true,
+                hover_type: event.type,
                 x: x,
                 y: y
               },
@@ -131,7 +144,7 @@ var aac_shim;
         }
       }
       return post_message({action: 'update_manifest', manifest: manifest}, callback);
-    }
+    },
     retrieve_object: function(url, callback) {
       return post_message({action: 'retrieve_object', url: id.toString()}, callback);
     },
@@ -139,16 +152,18 @@ var aac_shim;
       var target = {};
       var parse_value = function(str, horizontal) {
         var val = parseFloat(str);
-        if(!str.match(/\%/)) {
+        if(!str.toString().match(/\%/)) {
           if(horizontal) {
-            val = val / window.innerWidth * 100;
+            val = val / window.innerWidth;
           } else {
-            val = val / window.innerHeight * 100;
+            val = val / window.innerHeight;
           }
+        } else {
+          val = val / 100;
         }
         return val;
       };
-      target.id = target_data.id.toString() || ((new Date()).getTime() + "_" + Math.random());
+      target.id = (target_data.id || ((new Date()).getTime() + "_" + Math.random())).toString();
       target.left_percent = parse_value(target_data.left, true);
       target.top_percent = parse_value(target_data.top);
       target.width_percent = parse_value(target_data.width, true);
