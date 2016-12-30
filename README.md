@@ -51,7 +51,7 @@ easier to build so we can help people out!
 ## How to Use AAC Shim
 Include the shim in your page, then
 
-```
+```javascript
 aac_shim.status(function(result) {
   if(result.status == 'ready') {
     aac_shim.map_to_mouse_events();
@@ -83,7 +83,7 @@ movement.
 
 Anyway, here's how to define targets:
 
-```
+```javascript
 aac_shim.add_target({
   id: 'my_target' // if you don't define one, the shim will for you
   left: 50, // pixels
