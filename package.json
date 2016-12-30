@@ -1,0 +1,15 @@
+{
+  "name": "aac_shim",
+  "title": "AAC Shim",
+  "description": "A simple helper for adding AAC support to web apps",
+  "version": "0.1",
+  "homepage": "https://github.com/coughdrop/aac_shim",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/coughdrop/aac_shim.git"
+  },  
+  "license": {
+    "name": "MIT",
+    "url": "http://www.opensource.org/licenses/mit-license.php"
+  }
+}
