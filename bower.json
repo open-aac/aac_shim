@@ -1,5 +1,16 @@
 {
   "name": "aac_shim",
   "dependencies": {
-  }
+  },
+  "authors": [
+    "Brian Whitmer <brian@mycoughdrop.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
 }
