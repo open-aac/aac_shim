@@ -100,6 +100,18 @@ aac_shim.add_target({
 You can also `clear_target` to clear one at a time, by id, or `clear_targets` to clear them
 all at once.
 
+## Wish List
+If you're looking for a light project that would be of value to AAC users, here's a 
+wish list of small web apps that could be written and wired up with AAC shim. In general,
+for these kinds of apps it would be best to have a few relatively large buttons for
+user control.
+
+- Photo/video-taking tool
+- Joke of the day
+- YouTube favorites list
+- Dice roller
+- Spinner
+
 ## License
 
 Licensed under the MIT License.
