@@ -94,6 +94,9 @@
               var types = ['click', 'touch', 'gazedwell', 'scanselect'];
               if(opts.type == 'hover') {
                 types = ['mousemove', null, 'gazelinger', null];
+                opts.type = 'over';
+              } else {
+                opts.type = 'select';
               }
               var type = opts.force_type || types[event_type_index];
               var rect = overlay.getBoundingClientRect();
@@ -102,6 +105,7 @@
                 event.source.postMessage({
                   aac_shim: true,
                   callback_id: event.data.callback_id,
+                  aac_type: opts.type,
                   type: type,
                   x_percent: (opts.event.clientX - rect.left) / rect.width,
                   y_percent: (opts.event.clientY - rect.top) / rect.height

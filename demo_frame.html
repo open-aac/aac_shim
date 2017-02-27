@@ -33,6 +33,7 @@
           <td id="last_event2" style='width: 10%;'></td>
           <td id="last_event3" style='width: 10%;'></td>
           <td id="last_event4" style='width: 30%;'></td>
+          <td id="last_event5" style='width: 10%;'></td>
         </tr>
         <tr>
           <td>Last Target</td>
@@ -60,10 +61,13 @@
           if(res.status == 'ready') {
             aac_shim.map_to_mouse_events(document.getElementById('cursor'));
             aac_shim.listen(function(event) { 
-              document.getElementById('last_event1').innerHTML = event.type;
-              document.getElementById('last_event2').innerHTML = (Math.round(event.x_percent * 1000) / 10) + "%";
-              document.getElementById('last_event3').innerHTML = (Math.round(event.y_percent * 1000) / 10) + "%";
-              document.getElementById('last_event4').innerHTML = (new Date()).toString();
+              if(event.type) {
+                document.getElementById('last_event1').innerHTML = event.type;
+                document.getElementById('last_event2').innerHTML = event.aac_type;
+                document.getElementById('last_event3').innerHTML = (Math.round(event.x_percent * 1000) / 10) + "%";
+                document.getElementById('last_event4').innerHTML = (Math.round(event.y_percent * 1000) / 10) + "%";
+                document.getElementById('last_event5').innerHTML = (new Date()).toString();
+              }
             });
             document.getElementById('actions').style.display = 'block';
           }

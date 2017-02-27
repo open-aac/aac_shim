@@ -64,7 +64,7 @@ var aac_shim;
         if(aac_shim.cursor) { aac_shim.cursor.style.left = '-1000px'; }
         var elem = document.elementFromPoint(x, y);
         if(aac_shim.cursor) { aac_shim.cursor.style.left = cursor_left; }
-        if(event.type == 'gazedwell' || event.type == 'click' || event.type == 'touch' || event.type == 'scanselect') {
+        if(event.aac_type == 'select' || event.type == 'gazedwell' || event.type == 'mouseup' || event.type == 'click' || event.type == 'touchend' || event.type == 'scanselect') {
           elem.dispatchEvent(new CustomEvent(
             'click',
             {
@@ -78,7 +78,7 @@ var aac_shim;
               cancelable: true
             }
           ));
-        } else if(event.type == 'gazelinger' || event.type == 'mousemove' || event.type == 'scanover') {
+        } else if(event.aac_type == 'over' || event.type == 'gazelinger' || event.type == 'mousemove' || event.type == 'scanover' || event.type == 'touchmove') {
           elem.dispatchEvent(new CustomEvent(
             'mousemove',
             {
@@ -92,6 +92,18 @@ var aac_shim;
               cancelable: true
             }
           ));
+        } else if(event.aac_type == 'start') {
+          elem.dispatchEvent(new CustomEvent(
+            'mousedown',
+            {
+              detail: {
+                from_aac: true,
+                down_type: event.type,
+                x: x,
+                y: y
+              }
+            }
+          );
         }
       });
     },
