@@ -2,7 +2,7 @@ var aac_shim;
 (function() {
   var aac = window.parent;
   if(!window.parent || window.parent == window) {
-    console.error('Parent window not found! AAC Shim will not work.')
+    console.log('Parent window not found, AAC Shim will not be running for this session.')
     aac = null;
   }
   var session_id = (new Date()).getTime() + "_" + Math.random();
