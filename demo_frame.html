@@ -1,26 +1,34 @@
 <html>
   <head>
     <style>
+      h1 {
+        font-family: Arial;
+      }
       .target {
         border: 1px solid #800;
         background: 1px solid #a00;
       }
       table {
         border-collapse: collapse;
+        margin-bottom: 10px;
       }
       table td {
-        border: 1px solid #eee;
+        border: 1px solid #ddd;
         padding: 5px;
       }
       button {
-        height: 40px;
         display: inline-block;
+        font-size: 20px;
+        padding: 10px;
+        background: #fafafa;
+        border: 2px solid #888;
+        border-radius: 5px;
       }
     </style>
   </head>
   <body>
     <h2>AAC Shim Example</h2>
-    <p>This is an example of a minimal app using AAC shim to communicate with its container.</p>
+    <p>This is an example of a minimal app using AAC shim to communicate with its AAC-enabled container.</p>
     <table>
       <tbody>
         <tr>
@@ -32,8 +40,8 @@
           <td id="last_event1" style='width: 10%;'></td>
           <td id="last_event2" style='width: 10%;'></td>
           <td id="last_event3" style='width: 10%;'></td>
-          <td id="last_event4" style='width: 30%;'></td>
-          <td id="last_event5" style='width: 10%;'></td>
+          <td id="last_event4" style='width: 10%;'></td>
+          <td id="last_event5" style='width: 30%;'></td>
         </tr>
         <tr>
           <td>Last Target</td>
@@ -41,6 +49,7 @@
           <td id="last_target2"></td>
           <td id="last_target3"></td>
           <td id="last_target4"></td>
+          <td id="last_target5"></td>
         </tr>
       </tbody>
     </table>
@@ -50,7 +59,7 @@
       <button id="clear_targets">Clear All Targets</button>
     </div>
     <div id="cursor" style="position: absolute; left: -1000px; width: 5px; height: 5px; background: #f00; border-radius: 5px;"></div>
-    <script src="./aac_shim.js"></script>
+    <script src="/assets/aac_shim.js"></script>
     <script>
       document.getElementById('status').innerHTML = 'initializing';
       aac_shim.status(function(res) {
@@ -86,20 +95,20 @@
           div.id = 'target_' + target_ids.length;
           div.classList.add('target');
           var left = (10 + (target_ids.length * 20)) + "%";
-          div.style = 'display: block; position: absolute; top: calc(250px + 10px); height: calc(100px - 20px); left: calc(' + left + ' + 10px); width: calc(20% - 20px);'
+          div.style = 'display: block; position: absolute; top: calc(300px + 10px); height: calc(100px - 20px); left: calc(' + left + ' + 10px); width: calc(20% - 20px);'
           div.innerHTML = "target " + (target_ids.length + 1);
           document.body.appendChild(div);
           
           var id = aac_shim.add_target({
             left: left,
             width: "20%",
-            top: 250,
+            top: 300,
             height: 100,
             prompt: "target " + (target_ids.length + 1)
           }, function(event) {
             if(event.type) {
               document.getElementById('last_target1').innerHTML = div.innerHTML;
-              document.getElementById('last_target4').innerHTML = (new Date()).toString();
+              document.getElementById('last_target5').innerHTML = (new Date()).toString();
             }
           });
           target_ids.push(id);
