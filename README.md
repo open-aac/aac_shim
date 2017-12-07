@@ -3,7 +3,7 @@
 AAC Shim is a simple helper method for helping web apps that want to support being
 embedded inside an AAC system.
 
-[Check out the demos here](https://tools.openaac.org)
+[Check out the demos here](https://tools.openaac.org/demo.html)
 
 ## What is AAC?
 AAC stands for Augmentative and Alternative Communication. It's a broad term that includes
